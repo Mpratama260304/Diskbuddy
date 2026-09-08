@@ -26,3 +26,34 @@ test('uses the verified final upstream, supports the apex alias and starts non-i
   assert.equal(config.trustProxy, false);
   assert.equal(config.enforceOrigin, true);
 });
+
+test('starts with Railway-provided domain and port without requiring PUBLIC_URL', () => {
+  const config = loadConfig({
+    RAILWAY_PUBLIC_DOMAIN: 'diskbuddy-mirror-production.up.railway.app',
+    PORT: '8080',
+  });
+  assert.equal(config.mapper.publicUrl.origin, 'https://diskbuddy-mirror-production.up.railway.app');
+  assert.equal(config.port, 8080);
+  assert.equal(config.host, '0.0.0.0');
+  assert.equal(config.trustProxy, true);
+  assert.equal(config.indexable, false);
+});
+
+test('explicit public origin and trust setting take precedence on Railway', () => {
+  const config = loadConfig({
+    RAILWAY_PUBLIC_DOMAIN: 'diskbuddy-mirror-production.up.railway.app',
+    PUBLIC_URL: 'https://custom.example',
+    TRUST_PROXY: 'false',
+  });
+  assert.equal(config.mapper.publicUrl.origin, 'https://custom.example');
+  assert.equal(config.trustProxy, false);
+  assert.equal(loadConfig({ RAILWAY_PROJECT_ID: 'test-project', PUBLIC_URL: 'https://custom.example' }).trustProxy, true);
+});
+
+test('Railway domain fallback still rejects invalid origins and upstream loops', () => {
+  for (const domain of ['user:password@example.com', 'example.com/path', 'diskbuddy.com', 'www.diskbuddy.com']) {
+    assert.throws(() => loadConfig({ RAILWAY_PUBLIC_DOMAIN: domain }));
+  }
+  assert.throws(() => loadConfig({ RAILWAY_PROJECT_ID: 'test-project' }), /PUBLIC_URL/);
+  assert.throws(() => loadConfig({ RAILWAY_PUBLIC_DOMAIN: 'mirror.example', PUBLIC_URL: 'invalid-url' }));
+});

@@ -26,7 +26,7 @@ npm start
 
 Buka `http://localhost:3000`. Tes: `npm test`. Pemeriksaan syntax dan tes: `npm run check`.
 
-`PUBLIC_URL` wajib berisi origin final, tanpa path, query, atau kredensial. Jangan gunakan domain yang sama dengan upstream. `.env` tidak masuk Git atau image Docker.
+`PUBLIC_URL` berisi origin final, tanpa path, query, atau kredensial. Di Railway, jika kosong, aplikasi memakai `https://` + `RAILWAY_PUBLIC_DOMAIN` yang diberikan platform. Di luar Railway, `PUBLIC_URL` tetap wajib. Jangan gunakan domain yang sama dengan upstream. `.env` tidak masuk Git atau image Docker.
 
 ## Konfigurasi
 
@@ -34,11 +34,11 @@ Buka `http://localhost:3000`. Tes: `npm test`. Pemeriksaan syntax dan tes: `npm 
 | --- | --- | --- |
 | `UPSTREAM_URL` | `https://www.diskbuddy.com` | Origin sumber final, bukan host yang selalu redirect ke alias. |
 | `UPSTREAM_ALIASES` | Apex Diskbuddy jika upstream tidak diisi | Origin tambahan dipisah koma, misalnya `https://diskbuddy.com`. Untuk upstream kustom, isi aliasnya secara eksplisit. Alias untuk rewrite; koneksi tetap ke upstream utama. |
-| `PUBLIC_URL` | Wajib | Domain final mirror, misalnya `https://mirror.example`. |
+| `PUBLIC_URL` | Domain publik Railway jika tersedia; selain itu wajib | Domain final mirror, misalnya `https://mirror.example`. Nilai eksplisit selalu diprioritaskan. |
 | `PORT`, `HOST` | `3000`, `0.0.0.0` | Memakai `PORT` dari platform. |
 | `INDEXABLE` | `false` | Menambahkan `noindex` selama staging. Ubah `true` setelah siap. Tidak menghapus `noindex` dari sumber. |
 | `CANONICAL_MODE` | `mirror` | `mirror`: petakan canonical sumber; `upstream`: pertahankan canonical ke sumber. |
-| `TRUST_PROXY` | `false` | Railway/Render/Caddy HTTPS: `true`, mempercayai `X-Forwarded-Proto`. |
+| `TRUST_PROXY` | `true` di Railway, selain itu `false` | Railway dideteksi melalui `RAILWAY_PROJECT_ID` atau `RAILWAY_PUBLIC_DOMAIN`. Render/Caddy HTTPS: isi `true`. Override eksplisit tetap dipakai. |
 | `ENFORCE_PUBLIC_ORIGIN` | `true` | Host/skema lain diarahkan 308 ke `PUBLIC_URL`. |
 | `SITEMAP_PATHS` | Kosong | Sitemap sumber tambahan, dipisah koma: `/sitemap_index.xml,/news.xml`. Ini path sitemap, bukan halaman biasa. |
 | `SITEMAP_PAGE_PATHS` | Kosong | Daftar halaman eksplisit untuk fallback jika sumber tidak menyediakan sitemap, misalnya `/,/about`. Maksimal 500; bukan crawler otomatis. |
@@ -98,7 +98,25 @@ INDEXABLE=false
 CANONICAL_MODE=mirror
 ```
 
-Gunakan domain Railway yang diberikan atau custom domain HTTPS sebagai `PUBLIC_URL`. Tidak perlu memaksa `PORT`; platform akan memasoknya. Isi konfigurasi sitemap sesuai sumber. Setelah validasi produksi selesai, ubah `INDEXABLE=true` bila domain mirror memang yang ingin diindeks.
+Gunakan domain Railway yang diberikan atau custom domain HTTPS sebagai `PUBLIC_URL`. Jika `PUBLIC_URL` tidak diisi, aplikasi memakai `RAILWAY_PUBLIC_DOMAIN` otomatis dengan HTTPS. Aktifkan public domain di Settings > Networking agar variabel tersebut tersedia; untuk custom domain, tetap isi `PUBLIC_URL` secara eksplisit. Tidak perlu memaksa `PORT`; platform akan memasoknya. Isi konfigurasi sitemap sesuai sumber. Setelah validasi produksi selesai, ubah `INDEXABLE=true` bila domain mirror memang yang ingin diindeks.
+
+Jika build sukses tetapi health check gagal:
+
+1. Buka **Deploy Logs**, bukan hanya Build Logs. Versi lama berhenti sebelum membuka port jika `PUBLIC_URL` kosong. Versi ini mendukung fallback domain Railway, tetapi tetap memerlukan `PUBLIC_URL` bila platform belum menyediakan domain publik.
+2. Untuk deployment Diskbuddy ini, konfigurasi eksplisit yang bisa dipakai adalah:
+
+	```dotenv
+	PUBLIC_URL=https://diskbuddy-mirror-production.up.railway.app
+	HOST=0.0.0.0
+	TRUST_PROXY=true
+	INDEXABLE=false
+	```
+
+3. Jangan mengimpor seluruh `.env.example` lokal tanpa penyesuaian. `PUBLIC_URL=http://localhost:3000`, `HOST=127.0.0.1`, atau `TRUST_PROXY=false` tidak cocok untuk service publik di belakang HTTPS Railway. Nilai eksplisit tidak diganti otomatis.
+4. Pakai health check `/healthz`, kosongkan Start Command override agar CMD Docker dipakai, dan pastikan target port pada Networking cocok dengan `PORT` runtime. Aplikasi bind ke `0.0.0.0` secara default. Log startup yang diharapkan adalah JSON dengan `event: listening` dan port aktual.
+5. Deploy ulang setelah perubahan Variables/kode. Health check menerima host khusus Railway dan tidak mengakses upstream, sehingga menambah timeout health check tidak memperbaiki proses yang gagal startup. Respons publik `Application not found` dengan header `x-railway-fallback` berasal dari routing Railway, bukan handler aplikasi.
+
+Jika masih gagal, periksa baris pertama error pada Deploy Logs untuk membedakan konfigurasi invalid, crash proses, port yang tidak cocok, atau masalah routing domain.
 
 ### Render
 
