@@ -19,7 +19,7 @@ function get(url, headers) {
   });
 }
 
-test('Railway startup serves health before host enforcement and HTTPS traffic without a redirect loop', { timeout: 10000 }, async (context) => {
+async function verifyStartup(context, publicUrl) {
   let upstreamRequests = 0;
   const upstream = http.createServer((_request, response) => {
     upstreamRequests += 1;
@@ -33,10 +33,12 @@ test('Railway startup serves health before host enforcement and HTTPS traffic wi
   }));
   await once(upstream, 'listening');
 
-  const domain = 'diskbuddy-mirror-production.up.railway.app';
+  const railwayDomain = 'diskbuddy-mirror-production.up.railway.app';
+  const domain = publicUrl ? new URL(publicUrl).host : railwayDomain;
   const child = spawn(process.execPath, [fileURLToPath(new URL('../src/server.js', import.meta.url))], {
     env: {
-      RAILWAY_PUBLIC_DOMAIN: domain,
+      RAILWAY_PUBLIC_DOMAIN: railwayDomain,
+      ...(publicUrl ? { PUBLIC_URL: publicUrl } : {}),
       PORT: '0',
       UPSTREAM_URL: `http://127.0.0.1:${upstream.address().port}`,
     },
@@ -72,6 +74,22 @@ test('Railway startup serves health before host enforcement and HTTPS traffic wi
   assert.equal(page.headers.location, undefined);
   assert.ok(page.body.includes(`href="https://${domain}/"`));
   assert.equal(upstreamRequests, 1);
+  if (publicUrl) {
+    for (const host of [railwayDomain, 'www.diskbuddy.net']) {
+      const redirect = await get(`${address}/article?page=2`, { host, 'x-forwarded-proto': 'https' });
+      assert.equal(redirect.status, 308);
+      assert.equal(redirect.headers.location, `${publicUrl}/article?page=2`);
+    }
+    assert.equal(upstreamRequests, 1);
+  }
   child.kill('SIGTERM');
   assert.deepEqual(await exited, [0, null]);
+}
+
+test('Railway startup serves health before host enforcement and HTTPS traffic without a redirect loop', { timeout: 10000 }, async (context) => {
+  await verifyStartup(context);
+});
+
+test('diskbuddy.net serves normally and Railway/www hosts redirect to the custom domain', { timeout: 10000 }, async (context) => {
+  await verifyStartup(context, 'https://diskbuddy.net');
 });

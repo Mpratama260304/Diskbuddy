@@ -90,7 +90,7 @@ Hubungkan repo sebagai service. [railway.json](railway.json) memakai [Dockerfile
 Set Variables:
 
 ```dotenv
-PUBLIC_URL=https://domain-final-anda.example
+PUBLIC_URL=https://diskbuddy.net
 UPSTREAM_URL=https://www.diskbuddy.com
 UPSTREAM_ALIASES=https://diskbuddy.com
 TRUST_PROXY=true
@@ -100,13 +100,19 @@ CANONICAL_MODE=mirror
 
 Gunakan domain Railway yang diberikan atau custom domain HTTPS sebagai `PUBLIC_URL`. Jika `PUBLIC_URL` tidak diisi, aplikasi memakai `RAILWAY_PUBLIC_DOMAIN` otomatis dengan HTTPS. Aktifkan public domain di Settings > Networking agar variabel tersebut tersedia; untuk custom domain, tetap isi `PUBLIC_URL` secara eksplisit. Tidak perlu memaksa `PORT`; platform akan memasoknya. Isi konfigurasi sitemap sesuai sumber. Setelah validasi produksi selesai, ubah `INDEXABLE=true` bila domain mirror memang yang ingin diindeks.
 
+**Domain utama deployment ini adalah `https://diskbuddy.net`.** Pada service Railway yang menjalankan aplikasi, buka Variables di environment produksi dan ganti nilai `PUBLIC_URL` lama menjadi `https://diskbuddy.net`, lalu deploy perubahan Variables. Jangan mengubah `RAILWAY_PUBLIC_DOMAIN`, dan jangan memakai referensi `${{RAILWAY_PUBLIC_DOMAIN}}` sebagai `PUBLIC_URL` jika tujuannya domain kustom. Nilai di dashboard tidak berubah hanya karena README atau kode di GitHub diperbarui.
+
+Menambahkan custom domain pada Networking tidak otomatis mengubah `PUBLIC_URL`. Jika `PUBLIC_URL` masih menunjuk domain Railway, aplikasi akan mengarahkan custom domain ke sana. Tetap gunakan `TRUST_PROXY=true` dan `ENFORCE_PUBLIC_ORIGIN=true`; mematikan pemeriksaan origin hanya menyembunyikan redirect, sementara canonical dan sitemap tetap memakai domain yang salah.
+
+Setelah deploy dengan konfigurasi yang benar, `https://diskbuddy.net/` harus melayani halaman tanpa redirect ke domain Railway; request ke domain Railway justru diarahkan ke `https://diskbuddy.net` dengan path/query dipertahankan. Log `event: listening` harus menunjukkan `publicUrl: https://diskbuddy.net`. Tes regresi untuk perilaku ini ada di [test/startup.test.js](test/startup.test.js).
+
 Jika build sukses tetapi health check gagal:
 
 1. Buka **Deploy Logs**, bukan hanya Build Logs. Versi lama berhenti sebelum membuka port jika `PUBLIC_URL` kosong. Versi ini mendukung fallback domain Railway, tetapi tetap memerlukan `PUBLIC_URL` bila platform belum menyediakan domain publik.
 2. Untuk deployment Diskbuddy ini, konfigurasi eksplisit yang bisa dipakai adalah:
 
 	```dotenv
-	PUBLIC_URL=https://diskbuddy-mirror-production.up.railway.app
+	PUBLIC_URL=https://diskbuddy.net
 	HOST=0.0.0.0
 	TRUST_PROXY=true
 	INDEXABLE=false
