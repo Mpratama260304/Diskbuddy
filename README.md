@@ -37,6 +37,7 @@ Buka `http://localhost:3000`. Tes: `npm test`. Pemeriksaan syntax dan tes: `npm 
 | `PUBLIC_URL` | Domain publik Railway jika tersedia; selain itu wajib | Domain final mirror, misalnya `https://mirror.example`. Nilai eksplisit selalu diprioritaskan. |
 | `PORT`, `HOST` | `3000`, `0.0.0.0` | Memakai `PORT` dari platform. |
 | `INDEXABLE` | `false` | Menambahkan `noindex` selama staging. Ubah `true` setelah siap. Tidak menghapus `noindex` dari sumber. |
+| `CUSTOM_404` | `true` | Mengganti halaman 404 HTML dari sumber dengan halaman 404 bawaan mirror yang rapi. Set `false` untuk meneruskan halaman 404 sumber apa adanya. |
 | `CANONICAL_MODE` | `mirror` | `mirror`: petakan canonical sumber; `upstream`: pertahankan canonical ke sumber. |
 | `TRUST_PROXY` | `true` di Railway, selain itu `false` | Railway dideteksi melalui `RAILWAY_PROJECT_ID` atau `RAILWAY_PUBLIC_DOMAIN`. Render/Caddy HTTPS: isi `true`. Override eksplisit tetap dipakai. |
 | `ENFORCE_PUBLIC_ORIGIN` | `true` | Host/skema lain diarahkan 308 ke `PUBLIC_URL`. |

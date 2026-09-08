@@ -122,6 +122,23 @@ test('preserves 404/503, rewrites redirects without following, detects loops', a
   assert.equal((await request('/loop')).status, 502);
 });
 
+test('serves a branded 404 page for missing HTML pages, passes upstream 404 through when disabled', async (context) => {
+  const custom = await fixture(context);
+  const response = await custom.request('/dadac', { headers: { accept: 'text/html' } });
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('content-type'), 'text/html; charset=utf-8');
+  const document = load(await response.text());
+  assert.equal(document('meta[name=robots]').attr('content'), 'noindex, follow');
+  assert.match(document('.code').text(), /404/);
+  assert.equal(document('a.button').attr('href'), 'https://mirror.example/');
+  assert.match(document('.path').text(), /\/dadac/);
+
+  const disabled = await fixture(context, { CUSTOM_404: 'false' });
+  const original = await disabled.request('/dadac', { headers: { accept: 'text/html' } });
+  assert.equal(original.status, 404);
+  assert.match(await original.text(), /Not found/);
+});
+
 test('robots discovers multiple maps; fallback sitemap index links to nested gzip sitemaps', async (context) => {
   const { request } = await fixture(context);
   const robots = await (await request('/robots.txt')).text();

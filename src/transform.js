@@ -152,6 +152,100 @@ export function rewriteHtml(html, requestUrl, config, { status = 200, headerCano
   return document.html();
 }
 
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+}
+
+export function notFoundPage(config, requestPath = '/') {
+  const home = config.mapper.publicUrl.origin;
+  const site = escapeHtml(config.mapper.publicUrl.host);
+  const path = escapeHtml(requestPath);
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, follow">
+<title>404 · Page not found · ${site}</title>
+<style>
+:root { color-scheme: light dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 50% -10%, #1e293b 0%, #0f172a 55%, #020617 100%);
+  color: #e2e8f0;
+}
+.card {
+  width: 100%;
+  max-width: 520px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 48px 32px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+}
+.code {
+  font-size: clamp(72px, 18vw, 128px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #38bdf8, #818cf8 55%, #c084fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+h1 { font-size: 22px; margin: 16px 0 8px; }
+p { margin: 0 auto 24px; max-width: 40ch; color: #94a3b8; line-height: 1.6; }
+.path {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding: 6px 12px;
+  margin-bottom: 24px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.12);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  color: #cbd5e1;
+}
+a.button {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #0f172a;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+a.button:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(56, 189, 248, 0.35); }
+.foot { margin-top: 28px; font-size: 13px; color: #64748b; }
+.foot a { color: #94a3b8; }
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="code">404</div>
+  <h1>Page not found</h1>
+  <p>The page you were looking for doesn't exist, may have been moved, or the link is incorrect.</p>
+  <div class="path">${path}</div>
+  <div><a class="button" href="${home}/">Back to homepage</a></div>
+  <div class="foot"><a href="${home}/">${site}</a></div>
+</main>
+</body>
+</html>
+`;
+}
+
 export function parseXml(text) {
   if (/<!DOCTYPE|<!ENTITY/i.test(text)) throw new Error('XML DTD/entity declarations are not supported');
   return new DOMParser({ onError: (_level, message) => { throw new Error(message); } })

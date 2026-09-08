@@ -6,7 +6,7 @@ import { gzip, gunzip } from 'node:zlib';
 import { load } from 'cheerio';
 import robotsParser from 'robots-parser';
 import { rewriteHtml, rewriteXml, parseXml, rewriteRobots, sitemapDeclarations,
-  buildSitemapIndex, buildUrlset, canonicalUrl, rewriteLinkHeader, rewriteRefresh } from './transform.js';
+  buildSitemapIndex, buildUrlset, canonicalUrl, rewriteLinkHeader, rewriteRefresh, notFoundPage } from './transform.js';
 
 const compress = promisify(gzip);
 const decompress = promisify(gunzip);
@@ -341,6 +341,13 @@ export function createProxyServer(config, { logger = console } = {}) {
         }
       }
       const detectedKind = documentKind(outgoing['content-type'] || '', target.pathname, config);
+      if (output === undefined && status === 404 && config.custom404 && request.method === 'GET'
+          && (detectedKind === 'html' || /\btext\/html\b/i.test(request.headers.accept || ''))) {
+        await upstream.body?.cancel();
+        output = notFoundPage(config, target.pathname);
+        syntheticHeaders(outgoing, config);
+        transformedHeaders(outgoing, 'text/html; charset=utf-8');
+      }
       const kind = status >= 400 ? (detectedKind === 'html' ? 'html' : undefined)
         : redirectStatuses.has(status) ? undefined : detectedKind;
       if (output === undefined && kind && ![204, 206, 304].includes(status)) {

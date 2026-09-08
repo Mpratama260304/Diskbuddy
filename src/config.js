@@ -53,6 +53,7 @@ export function loadConfig(env = process.env) {
     port: integer(env.PORT, 3000, 'PORT', 0, 65535),
     host: env.HOST || '0.0.0.0',
     indexable: boolean(env.INDEXABLE, false, 'INDEXABLE'),
+    custom404: boolean(env.CUSTOM_404, true, 'CUSTOM_404'),
     trustProxy: boolean(env.TRUST_PROXY, railway, 'TRUST_PROXY'),
     enforceOrigin: boolean(env.ENFORCE_PUBLIC_ORIGIN, true, 'ENFORCE_PUBLIC_ORIGIN'),
     sanitizeJsonLd: boolean(env.SANITIZE_JSONLD, true, 'SANITIZE_JSONLD'),
