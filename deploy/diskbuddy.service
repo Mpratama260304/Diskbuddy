@@ -1,0 +1,22 @@
+[Unit]
+Description=Diskbuddy reverse proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=diskbuddy
+Group=diskbuddy
+WorkingDirectory=/opt/diskbuddy
+EnvironmentFile=/opt/diskbuddy/.env
+ExecStart=/usr/bin/node /opt/diskbuddy/src/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

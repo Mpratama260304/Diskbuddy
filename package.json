@@ -1,0 +1,22 @@
+{
+  "name": "diskbuddy-mirror",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --test"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.12",
+    "cheerio": "^1.2.0",
+    "http-link-header": "^1.1.4",
+    "parse-srcset": "^1.0.2",
+    "robots-parser": "^3.0.1"
+  }
+}
